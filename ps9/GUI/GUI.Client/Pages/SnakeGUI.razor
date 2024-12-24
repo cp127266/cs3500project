@@ -1,0 +1,567 @@
+﻿<!--CS3500 PS9 hnad out code. Implementation completed by Claire Park and Alissa Shaw (Team nerd ropes) for FA2024 CS3500, Nov. 9, 2024-->
+@page "/snake"
+@rendermode InteractiveServer
+@using Blazor.Extensions
+@using Blazor.Extensions.Canvas
+@using Blazor.Extensions.Canvas.Canvas2D
+@using System.Numerics
+@using System.Diagnostics
+@using System.Text.Json
+@using Networking
+@using System.Text.Json.Serialization;
+@using Model
+@using System.Text;
+@inject IJSRuntime JsRuntime;
+
+<PageTitle> Snake </PageTitle>
+
+<div class="input_row">
+    <label for="player_name">Player Name: </label>
+    <input id="player_name" disabled="@controller.NetworkStatus" type="text" @bind="playerName" />
+    <label for="url"> Server Address: </label> 
+    <input id="url" type="text" disabled="@controller.NetworkStatus" @bind="serverNameOrAddress" />
+    <label for="url"> Port: </label>
+    <input id="port" type="number" visibility="@controller.NetworkStatus" @bind="serverPort" class="port" /> <br />
+    
+    @if (controller.NetworkStatus)
+    {
+        <button class="btn btn-primary" @onclick="DisconnectFromServer">Disconnect</button>
+    }
+    else
+    {
+        <button class="btn btn-primary" @onclick="ConnectToServer">Connect</button>
+    }
+
+    @if (connectionFailed || !controller.NetworkStatus)
+    {
+        <entry>    Not connected to the server. </entry>
+    }
+    else
+    {
+        <entry>    Connected to the server. </entry>
+    }
+    @if (nameLengthFailed)
+    {
+        <entry>    Name length is too long. Keep character count under 16. </entry>
+    }
+    
+</div>
+<br />
+
+<div id="snakeCanvas" style="position: fixed; width: 100%; height: 100%">
+    <BECanvas Width="1000" Height="1000" @ref="canvasReference"></BECanvas>
+    <h3>Snake Scoreboard</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Player Name</th>
+                <th>&nbsp Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                Dictionary<int, Snake> _snakeClients;
+
+                // Locking the dictionary for thread-safe access
+                lock (_snakeClientsLock)
+                {
+                    _snakeClients = new Dictionary<int, Snake>(world.SnakeClients);
+                }
+
+                // Iterating through the copy to avoid locking during rendering
+                foreach (var snakeClient in _snakeClients)
+                {
+                    <tr>
+                        <td>@snakeClient.Value.Name</td>
+                        <td>&nbsp &nbsp &nbsp @snakeClient.Value.Score</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+
+@code
+{
+    ///<Summary>
+    /// For creating network connections ----------------------------------------------------------------
+    ///</Summary>
+
+    /// <summary>
+    /// stores player's inputted name.
+    /// </summary>
+    [JsonInclude]
+    [JsonPropertyName("name")]
+    private string playerName = string.Empty;
+
+    /// <summary>
+    /// default server to connect to.
+    /// </summary>
+    private string serverNameOrAddress = "localhost";
+
+    /// <summary>
+    /// default port to connect to.
+    /// </summary>
+    private int serverPort = 11000;
+
+    /// <summary>
+    /// Control of the MVC architecture.
+    /// </summary>
+    private Controller controller = new Controller();
+
+    /// <summary>
+    /// Determines if pixel is occupied or not.
+    /// </summary>
+    Dictionary<int, bool> pixels = null!;
+
+    /// <summary>
+    /// Boolean that stores is the connection failed
+    /// </summary>
+    private bool connectionFailed = false;
+
+    /// <summary>
+    /// Boolean that stores if the name is too long (over 16 characters)
+    /// </summary>
+    private bool nameLengthFailed = false;
+
+    /// <summary>
+    /// The World object that the GUI draws and is updated by the Controller
+    /// </summary>
+    private World world = new();
+
+    /// <summary>
+    /// the player ID assigned to the player from the server
+    /// </summary>
+    private int playerID = 0;
+
+    /// <summary>
+    /// Size of the world from the server
+    /// </summary>
+    private int worldSize = 0;
+
+    /// <summary>
+    /// Initialization of view
+    /// </summary>
+    private int ViewWidth = 0, ViewHeight = 0;
+
+    /// <summary>
+    /// Lock for the Dictionary of snake clients to enumerate through to render.
+    /// </summary>
+    private readonly object _snakeClientsLock = new object();
+
+    /// <summary>
+    /// Lock for the Dictionary of foods to enumerate through to render.
+    /// </summary>
+    private readonly object _foodLock = new object();
+
+    /// <summary>
+    /// Contains all coordinate positions of snake from head to tail
+    /// </summary>
+    private Queue<Point2D> ClientCoordinates = new();
+
+    /// <summary>
+    /// handler for connect button
+    /// </summary>
+    private void ConnectToServer()
+    {
+        // Resets failed messages
+        connectionFailed = false;
+        nameLengthFailed = false;
+
+        if (playerName.Length > 16)
+        {
+            nameLengthFailed = true;
+            return;
+        }
+        try
+        {
+            controller.ConnectToNetwork(serverNameOrAddress, serverPort);
+            controller.SendToNetwork(playerName);   // Initiates communication between client and server
+        }
+        catch
+        {
+            connectionFailed = true;
+        }
+    }
+
+    /// <summary>
+    /// Disconnect the network object from the server.
+    /// </summary>
+    private void DisconnectFromServer()
+    {
+        controller.DisconnectFromNetwork();
+    }
+
+    /// <Summary>
+    /// For drawing the world --------------------------------------------------------------------
+    /// </Summary>
+
+    private BECanvasComponent canvasReference = null!;
+    private Canvas2DContext context = null!;
+    private IJSObjectReference jsModule = null!;
+    private Timer? gameTimer;
+    private string? worldStateJson = string.Empty;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            jsModule = await JsRuntime.InvokeAsync<IJSObjectReference>("import", "./Pages/SnakeGUI.razor.js");
+            context = await canvasReference.CreateCanvas2DAsync();
+            await JsRuntime.InvokeAsync<object>("initRenderJS", DotNetObjectReference.Create(this));
+
+            //this is what happens when initially clicking on the "Snake" page, it is before connection is established and info about the world is recieved
+            await context.SetFillStyleAsync("red");
+            await context.FillRectAsync(0, 0, 1000, 1000);  // Clear the canvas
+
+        }
+        else
+        {
+            playerID = controller.ID;
+
+            worldSize = controller.WorldSize;
+            ViewHeight = worldSize / 2;
+            ViewWidth = worldSize / 2;
+
+
+            await RunGameLoopAsync();
+
+            await RenderWorldAsync();
+
+        }
+    }
+
+    /// <summary>
+    /// Runs the game loop.
+    /// </summary>
+    /// <returns></returns>
+    public async Task RunGameLoopAsync()
+    {
+        lock(controller.GameWorld)
+        {
+            world = controller.GameWorld;
+        }
+
+    }
+
+    /// <summary>
+    /// Draws the world based off the current status of 'world'.
+    /// </summary>
+    public async Task RenderWorldAsync()
+    {
+        await context.BeginBatchAsync();
+        try
+        {
+            await context.SetFillStyleAsync("lightblue");
+            await context.FillRectAsync(0, 0, 1000, 1000);  // Clear the canvas
+
+            Point2D snakeHead;
+            if (world.SnakeClients.TryGetValue(playerID, out Snake thisSnake))
+            {
+                snakeHead = thisSnake.Body[0];
+            }
+            else
+            {
+                return; // Waiting until world is filled out with this snake client
+            }
+
+            await context.BeginPathAsync();
+            await context.RectAsync(0, 0, ViewWidth, ViewHeight);
+            await context.ClipAsync();
+
+            await context.SaveAsync();
+
+            //Centers view around location of snake head
+            await context.TranslateAsync(ViewWidth / 2, ViewHeight / 2);
+            await context.TranslateAsync(-snakeHead.X, -snakeHead.Y);
+
+            await context.SetFillStyleAsync("lightgreen");
+            await context.FillRectAsync(-1950 / 2, -1950 / 2, 1950, 1950);
+            //await context.DrawImageAsync(BackgroundImage, -1000 / 2, -1000 / 2, 1000, 1000);
+
+            //Draws walls first
+            await RenderWalls();
+
+            // Draw food
+            await RenderFood();
+
+            // Draw snakes
+            await RenderSnakes();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}\n{ex.StackTrace}");
+        }
+        finally
+        {
+            await context.RestoreAsync();
+            await context.EndBatchAsync();
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Calculates wall length and angle then draws wall.
+    /// </summary>
+    /// <returns></returns>
+    private async Task RenderWalls()
+    {
+
+        foreach (var wall in world.WallObjects.Values)
+        {
+            // Calculate length and angle
+            double length = Math.Sqrt(Math.Pow(wall.P2.X - wall.P1.X, 2) + Math.Pow(wall.P2.Y - wall.P1.Y, 2));
+
+            // For rendering, we keep walls axis-aligned as per their nature
+            int startX = Math.Min(wall.P1.X, wall.P2.X);
+            int startY = Math.Min(wall.P1.Y, wall.P2.Y);
+            int width = (wall.P1.X == wall.P2.X) ? 50 : (int)length; //Checks if vertical else is length
+            int height = (wall.P1.Y == wall.P2.Y) ? 50 : (int)length; //Checks if horizontal else is length
+
+            // Draw the wall
+            await context.SetFillStyleAsync("black");
+            await context.FillRectAsync(startX, startY, width, height);
+        }
+    }
+
+    /// <summary>
+    /// Renders all food objects as a small red circle
+    /// </summary>
+    /// <returns></returns>
+    private async Task RenderFood()
+    {
+        // Create a copy of the 'current' state of SnakeClients inside the lock
+        Dictionary<int, Food> _foodObjects;
+        lock (_foodLock)
+        {
+            _foodObjects = new Dictionary<int, Food>(world.FoodObjects);
+        }
+
+        foreach (var food in _foodObjects.Values)
+        {
+            await context.SetFillStyleAsync("red");
+            await context.BeginPathAsync();
+            await context.ArcAsync(food.Coords.X, food.Coords.Y, 10, 0, 2 * Math.PI); // Full circle
+            await context.FillAsync();
+        }
+    }
+
+    /// <summary>
+    /// Assigns colors to snakes. Has 8 colors
+    /// </summary>
+    /// <param name="ID"></param>
+    /// <returns></returns>
+    private string AssignRandomColor(int ID)
+    {
+        if (ID % 9 == 0)
+        {
+            return "blue";
+        }
+        else if (ID % 8 == 1)
+        {
+            return "red";
+        }
+        else if (ID % 8 == 2)
+        {
+            return "green";
+        }
+        else if (ID % 8 == 3)
+        {
+            return "yellow";
+        }
+        else if (ID % 8 == 4)
+        {
+            return "purple";
+        }
+        else if (ID % 8 == 5)
+        {
+            return "pink";
+        }
+        else if (ID % 8 == 6)
+        {
+            return "cyan";
+        }
+        else //if (ID % 8 == 7)
+        {
+            return "orange";
+        }
+    }
+
+    /// <summary>
+    /// Renders all snake clients connected to the server and its movements
+    /// </summary>
+    /// <returns></returns>
+    private async Task RenderSnakes()
+    {
+        // Create a copy of the 'current' state of SnakeClients inside the lock
+        Dictionary<int, Snake> _snakeClients;
+        lock (_snakeClientsLock)
+        {
+            _snakeClients = new Dictionary<int, Snake>(world.SnakeClients);
+        }
+
+        // Draw snakes
+        foreach (var snake in _snakeClients.Values)
+        {
+           // check if snake is disconnected or not, update database accordingly
+            if (snake.DC)
+            {
+                controller.RemoveSnake(snake.ID);
+            }
+            else
+            {
+                controller.AddSnake(snake.ID, snake.Name);
+                if (snake.Score > controller.GetSnakeMaxScore(snake.ID))
+                {
+                    controller.SetSnakeMaxScore(snake.ID, snake.Score);
+                }
+            }
+
+            if (ClientCoordinates.Count == 0)
+            {
+                InitializeSnakeCoordinates(snake);
+            }
+            ClientCoordinates.Dequeue();
+            if (!snake.Died)
+            {
+                await context.SetFillStyleAsync("blue");
+            }
+            else
+            {
+                await context.SetFillStyleAsync("red");
+            }
+
+            if (!snake.Alive)
+            {
+                ClientCoordinates.Clear();
+            }
+
+            if (!snake.Died)
+            {
+                await context.SetFillStyleAsync("blue");
+            }
+            else
+            {
+                await context.SetFillStyleAsync("red");
+            }
+
+            await context.BeginPathAsync();
+            await context.SetFillStyleAsync("blue");
+            await context.SetLineWidthAsync(10);
+            await context.MoveToAsync(snake.Body[1].X, snake.Body[1].Y);
+            foreach (Point2D coordinate in ClientCoordinates)
+            {
+                await context.LineToAsync(coordinate.X, coordinate.Y);
+            }
+            await context.LineToAsync(snake.Body[0].X, snake.Body[0].Y);
+            await context.StrokeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Initializes coordinates of snake based on direction
+    /// </summary>
+    private void InitializeSnakeCoordinates(Snake snake)
+    {
+        Point2D currentPoint;
+        //Initializing coordinates of entire snake body
+        bool axis = false; // False == X axis, True == Y axis
+
+        // If snake is along Y axis
+        if (snake.Body[0].X == snake.Body[1].X)
+        {
+            axis = true;
+        }
+        if (axis) //Snake facing vertically
+        {
+            // Snake facing upwards
+            if (snake.Body[0].Y > snake.Body[1].Y)
+            {
+                for (int y = snake.Body[1].Y; y < snake.Body[0].Y; y += 5)
+                {
+                    currentPoint = new Point2D();
+                    currentPoint.X = snake.Body[0].X;
+                    currentPoint.Y = y;
+                    ClientCoordinates.Enqueue(currentPoint);
+                }
+            }
+
+            // Snake facing downwards
+            else if (snake.Body[0].Y < snake.Body[1].Y)
+            {
+                for (int y = snake.Body[1].Y; y > snake.Body[0].Y; y -= 5)
+                {
+                    currentPoint = new Point2D();
+                    currentPoint.X = snake.Body[0].X;
+                    currentPoint.Y = y;
+                    ClientCoordinates.Enqueue(currentPoint);
+                }
+            }
+        }
+        else if (!axis) //Snake facing horizontally
+        {
+            // Snake facing left
+            if (snake.Body[0].X > snake.Body[1].X)
+            {
+                for (int x = snake.Body[1].X; x < snake.Body[0].X; x += 5)
+                {
+                    currentPoint = new Point2D();
+                    currentPoint.Y = snake.Body[0].Y;
+                    currentPoint.X = x;
+                    ClientCoordinates.Enqueue(currentPoint);
+                }
+            }
+
+            // Snake facing right
+            else if (snake.Body[0].X < snake.Body[1].X)
+            {
+                for (int x = snake.Body[1].X; x > snake.Body[0].X; x -= 5)
+                {
+                    currentPoint = new Point2D();
+                    currentPoint.Y = snake.Body[0].Y;
+                    currentPoint.X = x;
+                    ClientCoordinates.Enqueue(currentPoint);
+                }
+            }
+        }
+    }
+    /// <summary>
+    /// Once the client is connected and the handshake is complete,
+    /// invoke some controller method to send the appropriate command to the server
+    /// </summary>
+    /// <param name="key"></param>
+    [JSInvokable]
+    public void HandleKeyPress(string key)
+    {
+        string direction = string.Empty;
+
+        if (controller.NetworkStatus)
+        {
+            if (key == "w" || key == "arrowup")
+            {
+                direction = "up";
+            }
+            else if (key == "a" || key == "arrowleft")
+            {
+                direction = "left";
+            }
+            else if (key == "s" || key == "arrowdown")
+            {
+                direction = "down";
+            }
+            else if (key == "d" || key == "arrowright")
+            {
+                direction = "right";
+            }
+            else
+            {
+                direction = "none";
+            }
+
+            controller.SendToNetwork($"{{\"moving\":\"{direction}\"}}");    //send "{"moving":"left"}"
+        }
+    }
+
+}
+
