@@ -1,0 +1,13 @@
+C:\Disk0\game-nerd_ropes\ps9\Database\bin\Debug\net8.0\DatabaseController.deps.json
+C:\Disk0\game-nerd_ropes\ps9\Database\bin\Debug\net8.0\DatabaseController.dll
+C:\Disk0\game-nerd_ropes\ps9\Database\bin\Debug\net8.0\DatabaseController.pdb
+C:\Disk0\game-nerd_ropes\ps9\Database\obj\Debug\net8.0\DatabaseController.csproj.AssemblyReference.cache
+C:\Disk0\game-nerd_ropes\ps9\Database\obj\Debug\net8.0\DatabaseController.GeneratedMSBuildEditorConfig.editorconfig
+C:\Disk0\game-nerd_ropes\ps9\Database\obj\Debug\net8.0\DatabaseController.AssemblyInfoInputs.cache
+C:\Disk0\game-nerd_ropes\ps9\Database\obj\Debug\net8.0\DatabaseController.AssemblyInfo.cs
+C:\Disk0\game-nerd_ropes\ps9\Database\obj\Debug\net8.0\DatabaseController.csproj.CoreCompileInputs.cache
+C:\Disk0\game-nerd_ropes\ps9\Database\obj\Debug\net8.0\DatabaseController.sourcelink.json
+C:\Disk0\game-nerd_ropes\ps9\Database\obj\Debug\net8.0\DatabaseController.dll
+C:\Disk0\game-nerd_ropes\ps9\Database\obj\Debug\net8.0\refint\DatabaseController.dll
+C:\Disk0\game-nerd_ropes\ps9\Database\obj\Debug\net8.0\DatabaseController.pdb
+C:\Disk0\game-nerd_ropes\ps9\Database\obj\Debug\net8.0\ref\DatabaseController.dll

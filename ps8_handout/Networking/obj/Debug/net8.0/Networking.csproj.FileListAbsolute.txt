@@ -1,0 +1,15 @@
+C:\Disk0\game-nerd_ropes\ps8_handout\Networking\bin\Debug\net8.0\Networking.deps.json
+C:\Disk0\game-nerd_ropes\ps8_handout\Networking\bin\Debug\net8.0\Networking.dll
+C:\Disk0\game-nerd_ropes\ps8_handout\Networking\bin\Debug\net8.0\Networking.pdb
+C:\Disk0\game-nerd_ropes\ps8_handout\Networking\bin\Debug\net8.0\Networking.xml
+C:\Disk0\game-nerd_ropes\ps8_handout\Networking\obj\Debug\net8.0\Networking.csproj.AssemblyReference.cache
+C:\Disk0\game-nerd_ropes\ps8_handout\Networking\obj\Debug\net8.0\Networking.GeneratedMSBuildEditorConfig.editorconfig
+C:\Disk0\game-nerd_ropes\ps8_handout\Networking\obj\Debug\net8.0\Networking.AssemblyInfoInputs.cache
+C:\Disk0\game-nerd_ropes\ps8_handout\Networking\obj\Debug\net8.0\Networking.AssemblyInfo.cs
+C:\Disk0\game-nerd_ropes\ps8_handout\Networking\obj\Debug\net8.0\Networking.csproj.CoreCompileInputs.cache
+C:\Disk0\game-nerd_ropes\ps8_handout\Networking\obj\Debug\net8.0\Networking.sourcelink.json
+C:\Disk0\game-nerd_ropes\ps8_handout\Networking\obj\Debug\net8.0\Networking.dll
+C:\Disk0\game-nerd_ropes\ps8_handout\Networking\obj\Debug\net8.0\refint\Networking.dll
+C:\Disk0\game-nerd_ropes\ps8_handout\Networking\obj\Debug\net8.0\Networking.xml
+C:\Disk0\game-nerd_ropes\ps8_handout\Networking\obj\Debug\net8.0\Networking.pdb
+C:\Disk0\game-nerd_ropes\ps8_handout\Networking\obj\Debug\net8.0\ref\Networking.dll

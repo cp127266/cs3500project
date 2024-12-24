@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "nhfxirV50aU=",
+  "success": true,
+  "projectFilePath": "C:\\Disk0\\game-nerd_ropes\\ps8_handout\\Networking\\Networking.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\cp127\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.2\\microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512",
+    "C:\\Users\\cp127\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\8.0.2\\microsoft.extensions.logging.abstractions.8.0.2.nupkg.sha512"
+  ],
+  "logs": []
+}

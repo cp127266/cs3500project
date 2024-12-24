@@ -1,0 +1,149 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>GUI.Client</name>
+    </assembly>
+    <members>
+        <member name="F:GUI.Client.Pages.SnakeGUI.playerName">
+            <Summary>
+             For creating network connections ----------------------------------------------------------------
+            </Summary>
+            <summary>
+            stores player's inputted name.
+            </summary>
+        </member>
+        <member name="F:GUI.Client.Pages.SnakeGUI.serverNameOrAddress">
+            <summary>
+            default server to connect to.
+            </summary>
+        </member>
+        <member name="F:GUI.Client.Pages.SnakeGUI.serverPort">
+            <summary>
+            default port to connect to.
+            </summary>
+        </member>
+        <member name="F:GUI.Client.Pages.SnakeGUI.controller">
+            <summary>
+            Control of the MVC architecture.
+            </summary>
+        </member>
+        <member name="F:GUI.Client.Pages.SnakeGUI.pixels">
+            <summary>
+            Determines if pixel is occupied or not.
+            </summary>
+        </member>
+        <member name="F:GUI.Client.Pages.SnakeGUI.connectionFailed">
+            <summary>
+            Boolean that stores is the connection failed
+            </summary>
+        </member>
+        <member name="F:GUI.Client.Pages.SnakeGUI.nameLengthFailed">
+            <summary>
+            Boolean that stores if the name is too long (over 16 characters)
+            </summary>
+        </member>
+        <member name="F:GUI.Client.Pages.SnakeGUI.world">
+            <summary>
+            The World object that the GUI draws and is updated by the Controller
+            </summary>
+        </member>
+        <member name="F:GUI.Client.Pages.SnakeGUI.playerID">
+            <summary>
+            the player ID assigned to the player from the server
+            </summary>
+        </member>
+        <member name="F:GUI.Client.Pages.SnakeGUI.worldSize">
+            <summary>
+            Size of the world from the server
+            </summary>
+        </member>
+        <member name="F:GUI.Client.Pages.SnakeGUI.ViewWidth">
+            <summary>
+            Initialization of view
+            </summary>
+        </member>
+        <member name="F:GUI.Client.Pages.SnakeGUI.ViewHeight">
+            <summary>
+            Initialization of view
+            </summary>
+        </member>
+        <member name="F:GUI.Client.Pages.SnakeGUI._snakeClientsLock">
+            <summary>
+            Lock for the Dictionary of snake clients to enumerate through to render.
+            </summary>
+        </member>
+        <member name="F:GUI.Client.Pages.SnakeGUI._foodLock">
+            <summary>
+            Lock for the Dictionary of foods to enumerate through to render.
+            </summary>
+        </member>
+        <member name="F:GUI.Client.Pages.SnakeGUI.ClientCoordinates">
+            <summary>
+            Contains all coordinate positions of snake from head to tail
+            </summary>
+        </member>
+        <member name="M:GUI.Client.Pages.SnakeGUI.ConnectToServer">
+            <summary>
+            handler for connect button
+            </summary>
+        </member>
+        <member name="M:GUI.Client.Pages.SnakeGUI.DisconnectFromServer">
+            <summary>
+            Disconnect the network object from the server.
+            </summary>
+        </member>
+        <member name="F:GUI.Client.Pages.SnakeGUI.canvasReference">
+            <Summary>
+            For drawing the world --------------------------------------------------------------------
+            </Summary>
+        </member>
+        <member name="M:GUI.Client.Pages.SnakeGUI.RunGameLoopAsync">
+            <summary>
+            Runs the game loop.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:GUI.Client.Pages.SnakeGUI.RenderWorldAsync">
+            <summary>
+            Draws the world based off the current status of 'world'.
+            </summary>
+        </member>
+        <member name="M:GUI.Client.Pages.SnakeGUI.RenderWalls">
+            <summary>
+            Calculates wall length and angle then draws wall.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:GUI.Client.Pages.SnakeGUI.RenderFood">
+            <summary>
+            Renders all food objects as a small red circle
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:GUI.Client.Pages.SnakeGUI.AssignRandomColor(System.Int32)">
+            <summary>
+            Assigns colors to snakes. Has 8 colors
+            </summary>
+            <param name="ID"></param>
+            <returns></returns>
+        </member>
+        <member name="M:GUI.Client.Pages.SnakeGUI.RenderSnakes">
+            <summary>
+            Renders all snake clients connected to the server and its movements
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:GUI.Client.Pages.SnakeGUI.InitializeSnakeCoordinates(Model.Snake)">
+            <summary>
+            Initializes coordinates of snake based on direction
+            </summary>
+        </member>
+        <member name="M:GUI.Client.Pages.SnakeGUI.HandleKeyPress(System.String)">
+            <summary>
+            Once the client is connected and the handshake is complete,
+            invoke some controller method to send the appropriate command to the server
+            </summary>
+            <param name="key"></param>
+        </member>
+    </members>
+</doc>
